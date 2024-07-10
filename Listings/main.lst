@@ -1,0 +1,189 @@
+C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2024 23:39:53 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include "public.h"
+   2          #include "LCD.h"
+   3          #include "dht11.h"
+   4          #include "buzzer.h"
+   5          sbit LED1 = P2^3;
+   6          sbit LED2 = P2^4;
+   7          
+   8          sbit Tupper = P3^3;
+   9          sbit Tlower = P3^4;
+  10          sbit Hupper = P3^5;
+  11          sbit Hlower = P3^6;
+  12          static u8 TupperThreshold=45,TlowerThreshold=0,HupperThreshold=85,HlowerThreshold=20;
+  13          
+  14          void set_H_Threshold(u8 upper,lower){
+  15   1              HupperThreshold = upper;
+  16   1              HlowerThreshold = lower;
+  17   1      }
+  18          void set_T_Threshold(u8 upper,lower){
+  19   1              TupperThreshold = upper;
+  20   1              TlowerThreshold = lower;
+  21   1      }
+  22          
+  23          void scan_button() {
+  24   1          if (Tupper == 0 || Tlower == 0 || Hupper == 0 || Hlower == 0) {
+  25   2              delay_ms(10); // 消抖处理
+  26   2              if (Tupper == 0) {
+  27   3                  set_T_Threshold(TupperThreshold + 1, TlowerThreshold);
+  28   3                  while (Tupper == 0); // 等待按键释放
+  29   3                  return;
+  30   3              } else if (Tlower == 0) {
+  31   3                  set_T_Threshold(TupperThreshold, TlowerThreshold - 1);
+  32   3                  while (Tlower == 0); // 等待按键释放
+  33   3                  return;
+  34   3              } else if (Hupper == 0) {
+  35   3                  set_H_Threshold(HupperThreshold + 1, HlowerThreshold);
+  36   3                  while (Hupper == 0); // 等待按键释放
+  37   3                  return;
+  38   3              } else if (Hlower == 0) {
+  39   3                  set_H_Threshold(HupperThreshold, HlowerThreshold - 1);
+  40   3                  while (Hlower == 0); // 等待按键释放
+  41   3                  return;
+  42   3              }
+  43   2          }
+  44   1      }
+  45          
+  46          u8 judge_alert(u8 temp,humi){
+  47   1              if((temp<TlowerThreshold || temp >TupperThreshold)){
+  48   2                      return 1;
+  49   2              }
+  50   1              if((humi<HlowerThreshold || humi >HupperThreshold)){
+  51   2                      return 2;
+  52   2              }
+  53   1              return 0;
+  54   1      }
+C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2024 23:39:53 PAGE 2   
+
+  55          
+  56          
+  57          void main() {
+  58   1              u16 times = 60; // alert time setting (seconds)
+  59   1              
+  60   1              u8 state;
+  61   1          u8 temp=0,humi=0;
+  62   1              u8 i=0;
+  63   1              u8 temp_buf[3],humi_buf[3],temp_upper_buf[3],temp_lower_buf[3],humi_lower_buf[3],humi_upper_buf[3];
+  64   1              
+  65   1              lcd_init();
+  66   1              while(DHT11_Init())     //检测DHT11是否存在
+  67   1              {
+  68   2                      display_string("Error");                
+  69   2              }
+  70   1              
+  71   1              while(1)
+  72   1              {       
+  73   2                      scan_button();
+  74   2                      
+  75   2                      goto_XY(0,0);
+  76   2                      //display_string("Temp: ");
+  77   2              
+  78   2                      DHT11_Read_Data(&temp,&humi);
+  79   2                      
+  80   2                      temp_buf[0]=temp/10+0x30;       
+  81   2                      temp_buf[1]=temp%10+0x30;
+  82   2                      temp_buf[2]='\0';
+  83   2      
+  84   2                      display_string(temp_buf);
+  85   2                      display_customized_char();
+  86   2                      display_string("C");
+  87   2                      goto_XY(0,1);
+  88   2                      //display_string("Humi: ");
+  89   2                      humi_buf[0]=humi/10+0x30;       
+  90   2                      humi_buf[1]=humi%10+0x30;
+  91   2                      humi_buf[2]='\0';
+  92   2                      display_string(humi_buf);
+  93   2                      display_string("%RH");
+  94   2      
+  95   2                      // display the Tthreshold:
+  96   2                      
+  97   2                      goto_XY(8,0);
+  98   2                      temp_lower_buf[0]=TlowerThreshold/10+0x30;      
+  99   2                      temp_lower_buf[1]=TlowerThreshold%10+0x30;
+ 100   2                      temp_lower_buf[2]='\0';
+ 101   2                      display_string(temp_lower_buf);
+ 102   2                      
+ 103   2                      display_string("-");
+ 104   2                      
+ 105   2                      temp_upper_buf[0]=TupperThreshold/10+0x30;      
+ 106   2                      temp_upper_buf[1]=TupperThreshold%10+0x30;
+ 107   2                      temp_upper_buf[2]='\0';
+ 108   2                      display_string(temp_upper_buf);
+ 109   2                      
+ 110   2                      // display the Hthreshold:
+ 111   2                      goto_XY(8,1);
+ 112   2                      humi_lower_buf[0]=HlowerThreshold/10+0x30;      
+ 113   2                      humi_lower_buf[1]=HlowerThreshold%10+0x30;
+ 114   2                      humi_lower_buf[2]='\0';
+ 115   2                      display_string(humi_lower_buf);
+ 116   2                      
+C51 COMPILER V9.60.7.0   MAIN                                                              07/10/2024 23:39:53 PAGE 3   
+
+ 117   2                      display_string("-");
+ 118   2                      
+ 119   2                      humi_upper_buf[0]=HupperThreshold/10+0x30;      
+ 120   2                      humi_upper_buf[1]=HupperThreshold%10+0x30;
+ 121   2                      humi_upper_buf[2]='\0';
+ 122   2                      display_string(humi_upper_buf);
+ 123   2                      
+ 124   2                      DHT11_Read_Data(&temp,&humi);
+ 125   2                      state = judge_alert(temp,humi);
+ 126   2                      if(state){
+ 127   3                              if(state==1) LED1 = 0;
+ 128   3                              if(state==2) LED2 = 0;
+ 129   3                              while(times--){
+ 130   4                                      DHT11_Read_Data(&temp,&humi);
+ 131   4                                      state = judge_alert(temp,humi);
+ 132   4                                      if(state){
+ 133   5                                              buzz_ms(2000);
+ 134   5                                      }else break;
+ 135   4                              }
+ 136   3                              LED1 = 1;LED2=1;
+ 137   3                      }
+ 138   2              }
+ 139   1      }
+ 140          
+ 141          /*
+ 142          void main()
+ 143          {
+ 144                  u16 i;
+ 145                  u16 j;
+ 146                  i=2000;
+ 147                  j=0;
+ 148                  while(1){
+ 149                          for(;j<4;j++){
+ 150                                  while(i--){
+ 151                                          beep = !beep;
+ 152                                          delay_10us(30);
+ 153          
+ 154                                  }
+ 155                                  beep=0;
+ 156                                  i=2000;
+ 157                                  delay_10us(1000000/10);
+ 158                          }
+ 159                  }
+ 160          }*/
+*** WARNING C316 IN LINE 160 OF main.c: unterminated conditionals
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    577    ----
+   CONSTANT SIZE    =     14    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      4      24
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

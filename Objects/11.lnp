@@ -1,0 +1,7 @@
+".\Objects\main.obj",
+".\Objects\LCD.obj",
+".\Objects\dht11.obj",
+".\Objects\public.obj",
+".\Objects\buzzer.obj" 
+TO ".\Objects\11" 
+PRINT(".\Listings\11.m51")
